@@ -16,10 +16,12 @@ const MAX_REVEAL_DELAY = 2000;
 const MAX_SLIDE_DELAY = 2000;
 const SLIDE_REVEAL_TIME_GAP = 100;
 
-const HUE_ARRAY = [0, 20, 160];
-const HUE_SPREAD = 10;
-const SATURATION_SPREAD = 30;
-const LIGHTNESS_SPREAD = 20;
+const COLORS = [
+  '#7CA5C4',
+  '#3C6CB0',
+  '#2F4A81',
+  '#EF844D',
+];
 
 const containerElement = $('#container');
 let MIN_BLOCK_WIDTH = 3; // some blocks might be shorter if needed
@@ -29,18 +31,9 @@ function getRandomInt(min, max) {
   return Math.round(Math.random() * (max - min) + min);
 }
 
-function getRandomBool() {
-  return Math.random() > 0.5;
-}
-
-function getRandomColor(params) {
-  const color = [
-    getRandomBool() ? params.hue + getRandomInt(-HUE_SPREAD, HUE_SPREAD) : params.hue + 180 + getRandomInt(-HUE_SPREAD, HUE_SPREAD),
-    params.saturation + getRandomInt(-SATURATION_SPREAD, SATURATION_SPREAD),
-    params.lightness + getRandomInt(-LIGHTNESS_SPREAD, LIGHTNESS_SPREAD),
-  ];
-
-  return `hsl(${color[0]}deg, ${color[1]}%, ${color[2]}%)`;
+function getRandomColor() {
+  const index = getRandomInt(0, COLORS.length - 1);
+  return COLORS[index];
 };
 
 function resize() {
@@ -138,18 +131,8 @@ function setBlockAnimations(block, position, spreadLeft, params) {
   return spaceBeforeBlock;
 }
 
-function readInput() {
-  RESOLUTION.x = parseInt($('input[name="resolution_x"]').val());
-  RESOLUTION.y = parseInt($('input[name="resolution_y"]').val());
-  SIZE.x = parseInt($('input[name="size_x"]').val());
-  SIZE.y = parseInt($('input[name="size_y"]').val());
-  MIN_BLOCK_WIDTH = parseInt($('input[name="min_block_width"]').val());
-  MAX_BLOCK_WIDTH = parseInt($('input[name="max_block_width"]').val());
-}
-
 function getCurrentAnimationParameters() {
   return {
-    hue: HUE_ARRAY[getRandomInt(0, HUE_ARRAY.length - 1)],
     saturation: getRandomInt(40, 80),
     lightness: getRandomInt(50, 70),
 
@@ -168,7 +151,6 @@ function getCurrentAnimationParameters() {
 }
 
 function play() {
-  readInput();
   containerElement.empty();
   resize();
 
