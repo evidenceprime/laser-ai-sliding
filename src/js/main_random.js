@@ -23,6 +23,7 @@ const COLORS = [
 
 const containerElement = $('#container');
 const rows = [];
+let target = 10;
 
 function getRandomInt(min, max) {
   return Math.round(Math.random() * (max - min) + min);
@@ -40,6 +41,8 @@ function resize() {
   UNIT.y = 100 / RESOLUTION.y * Y_FILL;
   OFFSET.x = (window.innerWidth / DEFAULT_UNIT_SIZE - Math.floor(RESOLUTION.x)) / 2;
   OFFSET.y = (window.innerHeight / DEFAULT_UNIT_SIZE - Math.floor(RESOLUTION.y)) / 2;
+
+  target = RESOLUTION.x / 2;
 }
 
 
@@ -52,18 +55,17 @@ function appendBlock(rows) {
     index: rowIndex,
     element: $('<div class="block">').appendTo(containerElement),
     width: blockWidth,
-    x: Math.floor((RESOLUTION.x - blockWidth) * Math.random() + RESOLUTION.x / 2),
+    x: Math.floor((RESOLUTION.x - blockWidth) * Math.random()),
     y: rowIndex,
-    transition: '.5s',
   };
 
+  const initialOffset = block.width * Math.random();
   block.element.css({
-    width: UNIT.x * block.width + '%',
+    width: 0,
     height: UNIT.y + '%',
     top: UNIT.y * (block.y + OFFSET.y) + '%',
-    left: UNIT.x * (block.x + OFFSET.x) + '%',
+    left: UNIT.x * (block.x + OFFSET.x + initialOffset) + '%',
     backgroundColor: getRandomColor(),
-    opacity: 0,
   });
 
   rows[rowIndex] = block;
@@ -72,20 +74,23 @@ function appendBlock(rows) {
 
 function revealBlock(block) {
   block.element.css({
-    opacity: 1,
+    width: UNIT.x * block.width + '%',
+    left: UNIT.x * (block.x + OFFSET.x) + '%',
   });
 }
 
 function slideBlock(block) {
-  block.finalX = Math.floor((RESOLUTION.x / 3 - block.width) * Math.random());
+  block.finalX = Math.round(target - block.width / 2 + Math.random() - 0.5);
   block.element.css({
     left: UNIT.x * (block.finalX + OFFSET.x) + '%',
   });
 }
 
 function hideBlock(block) {
+  const finalOffset = block.width * Math.random();
   block.element.css({
-    opacity: 0,
+    width: 0,
+    left: UNIT.x * (block.finalX + OFFSET.x + finalOffset) + '%',
   });
 }
 
@@ -95,6 +100,10 @@ function removeBlock(block, rows) {
 }
 
 function play() {
+  target += (Math.random() - 0.5) * 2;
+  target += (RESOLUTION.x / 2 - target) / 50;
+  target = Math.max(Math.min(target, RESOLUTION.x - 1), 0);
+
   const block = appendBlock(rows);
   if (block !== undefined) {
     const slideDelay = MAX_SLIDE_DELAY * Math.random() + 100 + ADDITIONAL_DELAY;

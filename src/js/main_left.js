@@ -57,13 +57,13 @@ function appendBlock(rows) {
     transition: '.5s',
   };
 
+  const initialOffset = block.width * Math.random();
   block.element.css({
-    width: UNIT.x * block.width + '%',
+    width: 0,
     height: UNIT.y + '%',
     top: UNIT.y * (block.y + OFFSET.y) + '%',
-    left: UNIT.x * (block.x + OFFSET.x) + '%',
+    left: UNIT.x * (block.x + OFFSET.x + initialOffset) + '%',
     backgroundColor: getRandomColor(),
-    opacity: 0,
   });
 
   rows[rowIndex] = block;
@@ -72,7 +72,8 @@ function appendBlock(rows) {
 
 function revealBlock(block) {
   block.element.css({
-    opacity: 1,
+    width: UNIT.x * block.width + '%',
+    left: UNIT.x * (block.x + OFFSET.x) + '%',
   });
 }
 
@@ -84,8 +85,10 @@ function slideBlock(block) {
 }
 
 function hideBlock(block) {
+  const finalOffset = block.width * Math.random();
   block.element.css({
-    opacity: 0,
+    width: 0,
+    left: UNIT.x * (block.finalX + OFFSET.x + finalOffset) + '%',
   });
 }
 
