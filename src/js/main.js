@@ -1,20 +1,18 @@
 import $ from 'cash-dom';
 
-// size of the field
-const RESOLUTION = {
-  x: 64,
-  y: 36,
-};
+const RESOLUTION = {};
+const UNIT = {};
+const OFFSET = {};
 
-// size of the final rectangle
-const SIZE = {
-  x: 16,
-  y: 10,
-};
-
-const MAX_REVEAL_DELAY = 2000;
-const MAX_SLIDE_DELAY = 2000;
-const SLIDE_REVEAL_TIME_GAP = 100;
+const MIN_BLOCK_WIDTH = 2;
+const MAX_BLOCK_WIDTH = 8;
+const DEFAULT_UNIT_SIZE = 30;
+const MAX_SLIDE_DELAY = 200;
+const MAX_HIDE_DELAY = 3000;
+const MAX_BLOCK_INTERVAL = 500;
+const ADDITIONAL_DELAY = 1000;
+const X_FILL = 0.9;
+const Y_FILL = 0.75;
 
 const COLORS = [
   '#7CA5C4',
@@ -24,8 +22,8 @@ const COLORS = [
 ];
 
 const containerElement = $('#container');
-let MIN_BLOCK_WIDTH = 3; // some blocks might be shorter if needed
-let MAX_BLOCK_WIDTH = 8; // absolute limit
+const rows = [];
+let target = 10;
 
 function getRandomInt(min, max) {
   return Math.round(Math.random() * (max - min) + min);
@@ -37,146 +35,89 @@ function getRandomColor() {
 };
 
 function resize() {
-  const containerSize = {};
-  if (RESOLUTION.x / RESOLUTION.y > window.innerWidth / window.innerHeight) {
-    containerSize.width = window.innerWidth * 0.95;
-    containerSize.height = containerSize.width * RESOLUTION.y / RESOLUTION.x;
-  } else {
-    containerSize.height = window.innerHeight * 0.95;
-    containerSize.width = containerSize.height * RESOLUTION.x / RESOLUTION.y;
-  }
-  containerElement.css(containerSize);
+  RESOLUTION.x = window.innerWidth / DEFAULT_UNIT_SIZE * X_FILL;
+  RESOLUTION.y = window.innerHeight / DEFAULT_UNIT_SIZE * Y_FILL;
+  UNIT.x = 100 / RESOLUTION.x * X_FILL;
+  UNIT.y = 100 / RESOLUTION.y * Y_FILL;
+  OFFSET.x = (window.innerWidth / DEFAULT_UNIT_SIZE - Math.floor(RESOLUTION.x)) / 2;
+  OFFSET.y = (window.innerHeight / DEFAULT_UNIT_SIZE - Math.floor(RESOLUTION.y)) / 2;
+
+  target = RESOLUTION.x / 2;
 }
 
-function getNextBlockWidth(widthLeft) {
-  let blockWidth;
 
-  if (widthLeft < 2 * MIN_BLOCK_WIDTH) {
-    if (widthLeft < MAX_BLOCK_WIDTH) {
-      blockWidth = widthLeft;
-    } else {
-      blockWidth = MIN_BLOCK_WIDTH;
-    }
-  } else {
-    blockWidth = getRandomInt(MIN_BLOCK_WIDTH, MAX_BLOCK_WIDTH);
+function appendBlock(rows) {
+  const rowIndex = getRandomInt(0, RESOLUTION.y - 1);
+  if (rows[rowIndex] !== undefined) return;
 
-    if (
-      widthLeft - blockWidth < MIN_BLOCK_WIDTH
-    ) {
-      if (widthLeft < MAX_BLOCK_WIDTH) {
-        blockWidth = widthLeft;
-      } else {
-        while (
-          widthLeft - blockWidth < MIN_BLOCK_WIDTH &&
-          blockWidth > MIN_BLOCK_WIDTH
-        ) {
-          blockWidth -= 1;
-        }
-      }
-    }
-  }
-
-  return Math.min(widthLeft, blockWidth);
-}
-
-function appendBlock(row, widthLeft, rowIndex) {
-  const blockWidth = getNextBlockWidth(widthLeft);
+  const blockWidth = getRandomInt(MIN_BLOCK_WIDTH, MAX_BLOCK_WIDTH);
   const block = {
+    index: rowIndex,
     element: $('<div class="block">').appendTo(containerElement),
     width: blockWidth,
-    x: SIZE.x - widthLeft, // final position
+    x: Math.floor((RESOLUTION.x - blockWidth) * Math.random()),
     y: rowIndex,
   };
 
-  row.push(block);
-  return blockWidth;
-}
-
-function setInitialBlockPosition(block, params, spread, spreadLeft) {
-  const left = block.x + spread;
-  const initialOffset = block.width * Math.random(); // offset before reveal
-  block.initialX = left + RESOLUTION.x - SIZE.x - spreadLeft; // position after reveal
-
+  const initialOffset = block.width * Math.random();
   block.element.css({
-    top: params.unit.y * (block.y + params.offset.y) + '%',
-    left: params.unit.x * (block.initialX + initialOffset) + '%',
     width: 0,
-    height: params.unit.y + '%',
-    backgroundColor: getRandomColor(params),
+    height: UNIT.y + '%',
+    top: UNIT.y * (block.y + OFFSET.y) + '%',
+    left: UNIT.x * (block.x + OFFSET.x + initialOffset) + '%',
+    backgroundColor: getRandomColor(),
   });
+
+  rows[rowIndex] = block;
+  return block;
 }
 
-function revealBlock(block, params) {
+function revealBlock(block) {
   block.element.css({
-    width: params.unit.x * block.width + '%',
-    left: params.unit.x * block.initialX + '%',
+    width: UNIT.x * block.width + '%',
+    left: UNIT.x * (block.x + OFFSET.x) + '%',
   });
 }
 
-function slideBlock(block, params) {
+function slideBlock(block) {
+  block.finalX = Math.round(target - block.width / 2 + Math.random() - 0.5);
   block.element.css({
-    left: params.unit.x * (block.x + params.offset.x) + '%',
+    left: UNIT.x * (block.finalX + OFFSET.x) + '%',
   });
 }
 
-function setBlockAnimations(block, position, spreadLeft, params) {
-  const spaceBeforeBlock = Math.min(Math.floor(2 * spreadLeft / (position + 1) * Math.random()), spreadLeft);
-  const revealDelay = MAX_REVEAL_DELAY * Math.random();
-  const slideDelay = Math.max(MAX_REVEAL_DELAY + MAX_SLIDE_DELAY * Math.random() + SLIDE_REVEAL_TIME_GAP, revealDelay);
-
-  setInitialBlockPosition(block, params, spaceBeforeBlock, spreadLeft);
-  setTimeout(() => revealBlock(block, params), revealDelay);
-  setTimeout(() => slideBlock(block, params), slideDelay);
-
-  return spaceBeforeBlock;
+function hideBlock(block) {
+  const finalOffset = block.width * Math.random();
+  block.element.css({
+    width: 0,
+    left: UNIT.x * (block.finalX + OFFSET.x + finalOffset) + '%',
+  });
 }
 
-function getCurrentAnimationParameters() {
-  return {
-    saturation: getRandomInt(40, 80),
-    lightness: getRandomInt(50, 70),
-
-    // size of the single square
-    unit: {
-      x: 100 / RESOLUTION.x,
-      y: 100 / RESOLUTION.y,
-    },
-
-    // offset to center the rectangle
-    offset: {
-      x: (RESOLUTION.x - SIZE.x) / 2,
-      y: (RESOLUTION.y - SIZE.y) / 2,
-    }
-  };
+function removeBlock(block, rows) {
+  block.element.remove();
+  rows[block.index] = undefined;
 }
 
 function play() {
-  containerElement.empty();
-  resize();
+  target += (Math.random() - 0.5) * 2;
+  target += (RESOLUTION.x / 2 - target) / 50;
+  target = Math.max(Math.min(target, RESOLUTION.x - 1), 0);
 
-  const params = getCurrentAnimationParameters();
+  const block = appendBlock(rows);
+  if (block !== undefined) {
+    const slideDelay = MAX_SLIDE_DELAY * Math.random() + 100 + ADDITIONAL_DELAY;
+    const hideDelay = MAX_HIDE_DELAY * Math.random() + slideDelay + ADDITIONAL_DELAY;
 
-  for (let y = 0; y < SIZE.y; y++) {
-    const row = [];
-    let widthLeft = SIZE.x;
-
-    while (widthLeft > 0) {
-      const blockWidth = appendBlock(row, widthLeft, y);
-      widthLeft -= blockWidth;
-    }
-
-    let spreadLeft = RESOLUTION.x - SIZE.x;
-
-    row.forEach((block, index) => {
-      const spread = setBlockAnimations(block, row.length - index, spreadLeft, params);
-      spreadLeft -= spread;
-    });
+    setTimeout(() => revealBlock(block), 100);
+    setTimeout(() => slideBlock(block), slideDelay);
+    setTimeout(() => hideBlock(block), hideDelay);
+    setTimeout(() => removeBlock(block, rows), hideDelay + 1000);
   }
+
+  setTimeout(play, MAX_BLOCK_INTERVAL * Math.random());
 }
 
 window.addEventListener('resize', resize);
-$('#settings input').on('input', play);
-$('#settings').on('click', event => event.stopPropagation());
-document.addEventListener('click', play);
-
+resize();
 play();

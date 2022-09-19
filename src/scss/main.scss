@@ -1,21 +1,18 @@
 body {
   margin: 0;
   height: calc(var(--vh, 1vh) * 100);
-
-  background-color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
   font-family: monospace;
 }
 
 #container {
   position: relative;
   background-color: #eff3f9;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 
   .block {
     position: absolute;
-    transition: 0.3s;
+    transition: 1s;
   }
 }
