@@ -13,6 +13,6 @@ body {
 
   .block {
     position: absolute;
-    transition: 1s;
+    transition: all 1s, left 1.5s, opacity 0.5s;
   }
 }
