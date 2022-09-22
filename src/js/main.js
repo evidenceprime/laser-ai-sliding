@@ -6,12 +6,14 @@ const OFFSET = {};
 
 const MIN_BLOCK_WIDTH = 2;
 const MAX_BLOCK_WIDTH = 8;
-const DEFAULT_UNIT_SIZE = 30;
+const DEFAULT_UNIT_SIZE = 40;
 const MAX_SLIDE_DELAY = 200;
 const MAX_BLOCK_INTERVAL = 500;
 const ADDITIONAL_DELAY = 1000;
-const X_FILL = 0.9;
-const Y_FILL = 0.75;
+const X_FILL = 1;
+const Y_FILL = 1;
+
+var IS_VISIBLE = true;
 
 const COLORS = [
   '#7CA5C4',
@@ -20,7 +22,9 @@ const COLORS = [
   '#EF844D',
 ];
 
-const containerElement = $('#container');
+var containerElement = null;
+var observer = null;
+
 const rows = [];
 
 function getRandomInt(min, max) {
@@ -32,13 +36,27 @@ function getRandomColor() {
   return COLORS[index];
 };
 
+function gaussianRand() {
+  var rand = 0;
+
+  for (var i = 0; i < 6; i += 1) {
+    rand += Math.random();
+  }
+
+  return rand / 6;
+}
+
+function getGaussianRandomInt(start, end) {
+  return Math.floor(start + gaussianRand() * (end - start + 1));
+}
+
 function resize() {
   RESOLUTION.x = window.innerWidth / DEFAULT_UNIT_SIZE * X_FILL;
   RESOLUTION.y = window.innerHeight / DEFAULT_UNIT_SIZE * Y_FILL;
   UNIT.x = 100 / RESOLUTION.x * X_FILL;
   UNIT.y = 100 / RESOLUTION.y * Y_FILL;
-  OFFSET.x = (window.innerWidth / DEFAULT_UNIT_SIZE - Math.floor(RESOLUTION.x)) / 2;
-  OFFSET.y = (window.innerHeight / DEFAULT_UNIT_SIZE - Math.floor(RESOLUTION.y)) / 2;
+  OFFSET.x = Math.floor((window.innerWidth / DEFAULT_UNIT_SIZE - RESOLUTION.x)) / 2;
+  OFFSET.y = Math.floor((window.innerHeight / DEFAULT_UNIT_SIZE - RESOLUTION.y)) / 2;
 }
 
 
@@ -59,7 +77,7 @@ function appendBlock(rows) {
     element: $('<div class="block">').appendTo(containerElement),
     width: blockWidth,
     x: Math.floor((RESOLUTION.x - blockWidth) * Math.random() + RESOLUTION.x / 2),
-    finalX: rows[rowIndex].width,
+    finalX: getGaussianRandomInt(0, RESOLUTION.x - blockWidth), //rows[rowIndex].width),
     y: rowIndex,
     transition: '.5s',
   };
@@ -139,20 +157,38 @@ function checkRows() {
 }
 
 function play() {
-  const block = appendBlock(rows);
-  if (block !== undefined) {
-    const slideDelay = MAX_SLIDE_DELAY * Math.random() + 100 + ADDITIONAL_DELAY;
+  if (IS_VISIBLE) {
+    const block = appendBlock(rows);
+    if (block !== undefined) {
+      const slideDelay = MAX_SLIDE_DELAY * Math.random() + 100 + ADDITIONAL_DELAY;
 
-    setTimeout(() => revealBlock(block), 100);
-    setTimeout(() => slideBlock(block), 500);
-    setTimeout(() => slideBlock(block), slideDelay);
+      setTimeout(() => revealBlock(block), 100);
+      setTimeout(() => slideBlock(block), 500);
+      setTimeout(() => slideBlock(block), slideDelay);
+    }
+    checkRows();
   }
 
-  checkRows();
   setTimeout(play, MAX_BLOCK_INTERVAL * Math.random());
 }
 
-window.addEventListener('resize', resize);
-resize();
-play();
+function sliderSetup(elemName) {
+  containerElement =$(elemName);
+  
+  observer = new IntersectionObserver(function(entries) {
+    if(entries[0].isIntersecting === true) {
+      IS_VISIBLE = true;
+    }
+    else {
+      IS_VISIBLE = false;
+    }
+  }, { threshold: [0] });
+
+  observer.observe(document.querySelector("#container"));
+  window.addEventListener('resize', resize);
+
+  resize(); 
+  play();
+}
+
 
